@@ -40,7 +40,8 @@ Set `PORT` in `.env.local` if you don't want the default `3000`, and keep `NEXT_
 
 1. Create a project at [supabase.com](https://supabase.com)
 2. Run the SQL in `supabase/migrations/20250716000000_initial_schema.sql` via the SQL editor
-3. Copy your project URL and keys into `.env.local`
+3. Copy your project URL, **publishable** key, and **secret** key into `.env.local`
+   (new dashboard keys: `sb_publishable_...` / `sb_secret_...`; legacy names were `anon` / `service_role`)
 
 Tables you'll see in the dashboard:
 
