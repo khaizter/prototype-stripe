@@ -35,6 +35,7 @@ cp .env.example .env.local
 ```
 
 Set `PORT` in `.env.local` if you don't want the default `3000`, and keep `NEXT_PUBLIC_APP_URL` in sync.
+`pnpm dev` loads `.env.local` before starting Next (Next itself ignores `PORT` in `.env` files).
 
 ### 3. Supabase
 
