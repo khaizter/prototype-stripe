@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# prototype-stripe
 
-## Getting Started
+A personal sandbox for learning Stripe. Build checkout, subscriptions, and webhooks incrementally while mirroring data to Postgres so you can inspect rows in the Supabase dashboard.
 
-First, run the development server:
+## Stack
+
+- **Next.js** — App Router
+- **Tailwind CSS** — styling
+- **shadcn/ui** — simple components on top of Tailwind
+- **Supabase** — Postgres + Auth. Tables for customers, subscriptions, orders, and webhook events
+- **Stripe** — payments API (starter files only; you implement features as you go)
+
+## What's included
+
+- Supabase client helpers (`lib/supabase/`)
+- Stripe client (`lib/stripe.ts`)
+- Webhook route skeleton (`app/api/webhooks/stripe/route.ts`) — verifies signatures and stores events
+- SQL migration for core tables (`supabase/migrations/`)
+- Auth callback route + middleware scaffold
+
+## Getting started
+
+### 1. Install dependencies
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copy the example file and fill in your keys (`.env.local` is gitignored):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cp .env.example .env.local
+```
 
-## Learn More
+Set `PORT` in `.env.local` if you don't want the default `3000`, and keep `NEXT_PUBLIC_APP_URL` in sync.
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Supabase
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Create a project at [supabase.com](https://supabase.com)
+2. Run the SQL in `supabase/migrations/20250716000000_initial_schema.sql` via the SQL editor
+3. Copy your project URL and keys into `.env.local`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Tables you'll see in the dashboard:
 
-## Deploy on Vercel
+| Table | Purpose |
+|-------|---------|
+| `profiles` | Linked to Supabase Auth users |
+| `customers` | Stripe customer records |
+| `subscriptions` | Stripe subscription state |
+| `orders` | Checkout sessions / payment intents |
+| `webhook_events` | Raw Stripe webhook payloads |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 4. Stripe
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Get test API keys from the [Stripe Dashboard](https://dashboard.stripe.com/test/apikeys)
+2. Install the [Stripe CLI](https://docs.stripe.com/stripe-cli)
+3. Forward webhooks locally:
+
+```bash
+stripe listen --forward-to localhost:3000/api/webhooks/stripe
+```
+
+Copy the webhook signing secret from the CLI output into `STRIPE_WEBHOOK_SECRET`.
+
+### 5. Run the dev server
+
+```bash
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) (or whatever `PORT` you set in `.env.local`).
+
+## Suggested learning path
+
+1. Run the Supabase migration and confirm tables exist
+2. Trigger a test webhook with the Stripe CLI — check `webhook_events` in Supabase
+3. Create a Stripe customer and sync it to the `customers` table
+4. Build a checkout session, then handle `checkout.session.completed`
+5. Add subscriptions and handle subscription lifecycle events
+6. Wire up Supabase Auth when you need user accounts
+
+## Project structure
+
+```
+app/
+  api/webhooks/stripe/   # Webhook endpoint (stores events, TODO handlers)
+  auth/callback/         # Supabase Auth redirect
+lib/
+  stripe.ts              # Stripe SDK instance
+  supabase/              # Browser, server, and admin clients
+supabase/migrations/     # Database schema
+types/database.ts        # Supabase table types
+```
