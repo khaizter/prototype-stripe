@@ -45,17 +45,43 @@ export async function POST(request: Request) {
     );
   }
 
-  // TODO: Handle events incrementally as you learn Stripe.
-  // switch (event.type) {
-  //   case "checkout.session.completed":
-  //   case "customer.subscription.created":
-  //   case "customer.subscription.updated":
-  //   case "customer.subscription.deleted":
-  //   case "invoice.paid":
-  //     break;
-  //   default:
-  //     break;
-  // }
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const productIds =
+      session.metadata?.product_ids
+        ?.split(",")
+        .map((id) => id.trim())
+        .filter(Boolean) ?? [];
+
+    if (productIds.length > 0) {
+      const { error: soldError } = await supabase
+        .from("products")
+        .update({ status: "sold" })
+        .in("id", productIds)
+        .eq("status", "available");
+
+      if (soldError) {
+        console.error("Failed to mark products sold:", soldError.message);
+        await supabase
+          .from("webhook_events")
+          .update({
+            processed: false,
+            error: soldError.message,
+          })
+          .eq("stripe_event_id", event.id);
+
+        return NextResponse.json(
+          { error: "Failed to mark products sold." },
+          { status: 500 },
+        );
+      }
+    }
+
+    await supabase
+      .from("webhook_events")
+      .update({ processed: true })
+      .eq("stripe_event_id", event.id);
+  }
 
   return NextResponse.json({ received: true });
 }

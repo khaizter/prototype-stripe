@@ -16,7 +16,6 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { getProductIcon } from "@/lib/products/icons";
-import { createClient } from "@/lib/supabase/client";
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -26,18 +25,8 @@ function formatPrice(cents: number) {
 }
 
 export function CartDrawer() {
-  const [supabase] = useState(() => createClient());
   const { user, loading, openAuthModal } = useAuth();
-  const {
-    items,
-    totalCents,
-    isOpen,
-    setCartOpen,
-    removeItem,
-    clearCart,
-    closeCart,
-    notifyCheckoutComplete,
-  } = useCart();
+  const { items, totalCents, isOpen, setCartOpen, removeItem } = useCart();
   const [checkingOut, setCheckingOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,46 +41,37 @@ export function CartDrawer() {
 
     if (items.length === 0) return;
 
-    const productIds = items.map((item) => item.productId);
-
     setCheckingOut(true);
-    const { data, error: updateError } = await supabase
-      .from("products")
-      .update({ status: "sold" })
-      .in("id", productIds)
-      .eq("status", "available")
-      .select("id");
-    setCheckingOut(false);
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            productId: item.productId,
+            name: item.name,
+            description: item.description,
+            price_cents: item.price_cents,
+          })),
+        }),
+      });
 
-    if (updateError) {
-      setError(updateError.message);
-      return;
-    }
+      const payload = (await response.json()) as {
+        url?: string;
+        error?: string;
+      };
 
-    const soldCount = data?.length ?? 0;
-    if (soldCount !== productIds.length) {
-      // RLS often blocks UPDATE with no error and 0 rows — products stay "available".
-      if (soldCount === 0) {
-        setError(
-          "Checkout could not update products (0 rows). In Supabase SQL editor, run the products UPDATE policy migration, then try again.",
-        );
+      if (!response.ok || !payload.url) {
+        setError(payload.error ?? "Checkout failed.");
         return;
       }
 
-      setError(
-        "Some items were no longer available. Refresh the shop and try again.",
-      );
-      const soldIds = new Set((data ?? []).map((row) => row.id));
-      for (const id of productIds) {
-        if (soldIds.has(id)) removeItem(id);
-      }
-      notifyCheckoutComplete();
-      return;
+      window.location.href = payload.url;
+    } catch {
+      setError("Checkout failed. Try again.");
+    } finally {
+      setCheckingOut(false);
     }
-
-    clearCart();
-    notifyCheckoutComplete();
-    closeCart();
   }
 
   return (
@@ -184,7 +164,7 @@ export function CartDrawer() {
                 disabled={checkingOut}
                 onClick={() => void handleCheckout()}
               >
-                {checkingOut ? "Checking out…" : "Checkout"}
+                {checkingOut ? "Redirecting…" : "Checkout"}
               </Button>
             </>
           ) : null}
