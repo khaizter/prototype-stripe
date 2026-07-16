@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Trash2 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/auth-provider";
@@ -15,6 +16,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { getProductIcon } from "@/lib/products/icons";
+import { createClient } from "@/lib/supabase/client";
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -24,15 +26,76 @@ function formatPrice(cents: number) {
 }
 
 export function CartDrawer() {
+  const [supabase] = useState(() => createClient());
   const { user, loading, openAuthModal } = useAuth();
-  const { items, totalCents, isOpen, setCartOpen, removeItem } = useCart();
+  const {
+    items,
+    totalCents,
+    isOpen,
+    setCartOpen,
+    removeItem,
+    clearCart,
+    closeCart,
+    notifyCheckoutComplete,
+  } = useCart();
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleCheckout() {
+    setError(null);
+
+    if (!user) {
+      setCartOpen(false);
+      openAuthModal("signin");
+      return;
+    }
+
+    if (items.length === 0) return;
+
+    const productIds = items.map((item) => item.productId);
+
+    setCheckingOut(true);
+    const { data, error: updateError } = await supabase
+      .from("products")
+      .update({ status: "sold" })
+      .in("id", productIds)
+      .eq("status", "available")
+      .select("id");
+    setCheckingOut(false);
+
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+
+    const soldCount = data?.length ?? 0;
+    if (soldCount !== productIds.length) {
+      // RLS often blocks UPDATE with no error and 0 rows — products stay "available".
+      if (soldCount === 0) {
+        setError(
+          "Checkout could not update products (0 rows). In Supabase SQL editor, run the products UPDATE policy migration, then try again.",
+        );
+        return;
+      }
+
+      setError(
+        "Some items were no longer available. Refresh the shop and try again.",
+      );
+      const soldIds = new Set((data ?? []).map((row) => row.id));
+      for (const id of productIds) {
+        if (soldIds.has(id)) removeItem(id);
+      }
+      notifyCheckoutComplete();
+      return;
+    }
+
+    clearCart();
+    notifyCheckoutComplete();
+    closeCart();
+  }
 
   return (
-    <Drawer
-      open={isOpen}
-      onOpenChange={setCartOpen}
-      swipeDirection="right"
-    >
+    <Drawer open={isOpen} onOpenChange={setCartOpen} swipeDirection="right">
       <DrawerContent className="data-[swipe-direction=right]:[--drawer-content-width:min(100%,24rem)]">
         <DrawerHeader>
           <DrawerTitle>Cart</DrawerTitle>
@@ -100,18 +163,30 @@ export function CartDrawer() {
               })}
             </ul>
           )}
+
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
         </div>
 
         <DrawerFooter>
           {user && items.length > 0 ? (
-            <div className="flex items-center justify-between pb-2">
-              <p className="text-sm text-muted-foreground">
-                {items.length} {items.length === 1 ? "item" : "items"}
-              </p>
-              <p className="text-base font-semibold">
-                {formatPrice(totalCents)}
-              </p>
-            </div>
+            <>
+              <div className="flex items-center justify-between pb-2">
+                <p className="text-sm text-muted-foreground">
+                  {items.length} {items.length === 1 ? "item" : "items"}
+                </p>
+                <p className="text-base font-semibold">
+                  {formatPrice(totalCents)}
+                </p>
+              </div>
+              <Button
+                type="button"
+                className="w-full"
+                disabled={checkingOut}
+                onClick={() => void handleCheckout()}
+              >
+                {checkingOut ? "Checking out…" : "Checkout"}
+              </Button>
+            </>
           ) : null}
           <DrawerClose
             render={<Button variant="outline" className="w-full" />}

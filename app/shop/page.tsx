@@ -14,7 +14,7 @@ import { createClient } from "@/lib/supabase/client";
 export default function ShopPage() {
   const [supabase] = useState(() => createClient());
   const { user, openAuthModal } = useAuth();
-  const { addItem } = useCart();
+  const { addItem, checkoutVersion } = useCart();
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +39,7 @@ export default function ShopPage() {
 
   useEffect(() => {
     void loadProducts();
-  }, [loadProducts]);
+  }, [loadProducts, checkoutVersion]);
 
   function handleAddToCart(product: ShopProduct) {
     setMessage(null);
