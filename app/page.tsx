@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const learningPath = [
   {
@@ -40,7 +41,15 @@ export default function Home() {
             <p className="text-sm text-muted-foreground">Learning sandbox</p>
             <h1 className="text-lg font-semibold">prototype-stripe</h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<a href="/admin" />}
+            >
+              Admin
+            </Button>
             <Badge variant="secondary">Next.js</Badge>
             <Badge variant="secondary">Stripe</Badge>
             <Badge variant="secondary">Supabase</Badge>
