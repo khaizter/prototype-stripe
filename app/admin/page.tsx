@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { ProductForm } from "@/components/admin/product-form";
+import { ProductForm } from "./components/product-form";
 import {
   ProductInventory,
   type Product,
-} from "@/components/admin/product-inventory";
+} from "./components/product-inventory";
+import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AdminPage() {
@@ -39,26 +39,23 @@ export default function AdminPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-6 py-4">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              <a href="/" className="hover:underline">
-                Home
-              </a>
-              {" / "}
-              Admin
-            </p>
-            <h1 className="text-lg font-semibold">Products</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Badge variant="secondary">
-              {products.length} {products.length === 1 ? "item" : "items"}
-            </Badge>
-          </div>
-        </div>
-      </header>
+      <SiteHeader
+        title="Products"
+        subtitle={
+          <>
+            <a href="/" className="hover:underline">
+              Home
+            </a>
+            {" / "}
+            Admin
+          </>
+        }
+        trailing={
+          <Badge variant="secondary">
+            {products.length} {products.length === 1 ? "item" : "items"}
+          </Badge>
+        }
+      />
 
       <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-10">
         {loadError ? (

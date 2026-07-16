@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { AuthProvider } from "@/components/auth/auth-provider";
+import { CartProvider } from "@/components/cart/cart-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 
 import "./globals.css";
@@ -33,7 +35,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
+          <AuthProvider>
+            <CartProvider>{children}</CartProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

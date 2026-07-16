@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { SiteHeader } from "@/components/site-header";
 
 const learningPath = [
   {
@@ -35,16 +37,14 @@ const learningPath = [
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-6 py-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Learning sandbox</p>
-            <h1 className="text-lg font-semibold">prototype-stripe</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
+      <SiteHeader
+        title="prototype-stripe"
+        subtitle="Learning sandbox"
+        trailing={
+          <>
             <Button
               variant="outline"
+              size="sm"
               nativeButton={false}
               render={<a href="/admin" />}
             >
@@ -53,9 +53,9 @@ export default function Home() {
             <Badge variant="secondary">Next.js</Badge>
             <Badge variant="secondary">Stripe</Badge>
             <Badge variant="secondary">Supabase</Badge>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-10">
         <section className="space-y-3">
@@ -83,9 +83,7 @@ export default function Home() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Starter files</CardTitle>
-            <CardDescription>
-              Key paths to explore as you go
-            </CardDescription>
+            <CardDescription>Key paths to explore as you go</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 font-mono text-sm text-muted-foreground">
             <p>lib/stripe.ts</p>
